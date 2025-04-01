@@ -1,0 +1,9 @@
+Verifying filelist location
+Opening filelist: C:\Program Files\DataFlex 24.0\Lib\WebAppMaster\Data\Filelist.cfg
+Start reindexing
+Opening WebAppSession (file number: 263)
+Reindexing WebAppSession
+Opening WebAppUser (file number: 264)
+Reindexing WebAppUser
+Opening WebAppServerProps.dat (file number: 265)
+Reindexing WebAppServerProps.dat

@@ -1,0 +1,380 @@
+﻿Use JWT\l8w8jwt2_structs.pkg
+
+#IFDEF IS$WIN64
+{ Visibility=Private }
+Define C_JWT_DLL_NAME for l8w8jwt264.dll
+#ELSE
+{ Visibility=Private }
+Define C_JWT_DLL_NAME for l8w8jwt2.dll
+#ENDIF
+{ Visibility=Private }
+Define C_JWT_NULL_POINTER for 0
+
+{ Visibility=Private }
+External_Function l8w8jwt_decoding_params_init "l8w8jwt_decoding_params_init" C_JWT_DLL_NAME ;
+    Pointer stl8w8jwt_decoding_params ;
+    Returns Boolean
+
+{ Visibility=Private }
+External_Function l8w8jwt_encoding_params_init "l8w8jwt_encoding_params_init" C_JWT_DLL_NAME ;
+    Pointer stl8w8jwt_encoding_params ;
+    Returns Boolean
+
+{ Visibility=Private }
+External_Function l8w8jwt_decode "l8w8jwt_decode" C_JWT_DLL_NAME ;
+    Pointer stl8w8jwt_decoding_params ;
+    Pointer il8w8jwt_validation_result ;
+    Pointer stl8w8jwt_out_claims ;
+    Pointer lpl8w8jwt_out_claims_length ;
+    Returns Integer
+
+{ Visibility=Private }
+External_Function l8w8jwt_encode "l8w8jwt_encode" C_JWT_DLL_NAME ;
+    Pointer stl8w8jwt_encoding_params ;
+    Returns Integer
+
+{ Visibility=Private }
+External_Function l8w8jwt_free "l8w8jwt_free" C_JWT_DLL_NAME ;
+    Pointer stll8w8jwt_mem_to_clear ;
+    Returns Boolean
+
+{ Visibility=Private }
+Class cL8w8jwt_Mixin is a Mixin
+    
+    { Visibility=Private }
+    Function JWT_Decode_Init Pointer aDecoding_Params Returns Boolean
+        Boolean bVoid
+        Move (l8w8jwt_decoding_params_init(aDecoding_Params)) to bVoid
+        Function_Return True
+    End_Function
+    
+    { Visibility=Private }
+    Function JWT_Encode_Init Pointer aEncoding_Params Returns Boolean
+        Boolean bVoid
+        Move (l8w8jwt_encoding_params_init(aEncoding_Params)) to bVoid
+        Function_Return True
+    End_Function
+    
+    { Visibility=Private }
+    Function JWT_Decode Pointer aDecoding_Params Pointer aValidation_Result Returns Integer
+        Integer iResult 
+        Move (l8w8jwt_decode(aDecoding_Params, aValidation_Result, C_JWT_NULL_POINTER, C_JWT_NULL_POINTER)) to iResult
+        Function_Return iResult
+    End_Function
+    
+    { Visibility=Private }
+    Function JWT_Encode Pointer aEncoding_Params Returns Integer
+        Integer iResult 
+        Move (l8w8jwt_encode(aEncoding_Params)) to iResult
+        Function_Return iResult
+    End_Function
+    
+    { Visibility=Private }
+    Function JWT_Free_Memory Pointer aMem_Address Returns Boolean
+        Boolean bVoid
+        Move (l8w8jwt_free(aMem_Address)) to bVoid
+        Function_Return True
+    End_Function
+    
+    { Visibility=Private }
+    Function DFJsonTypeToL8W8JWTJsonType Integer iDFJsonDataType Returns Integer
+        Case Begin
+            Case (iDFJsonDataType = jsonTypeNull)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_NULL
+            Case Break
+            Case (iDFJsonDataType = jsonTypeArray)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_ARRAY
+            Case Break
+            Case (iDFJsonDataType = jsonTypeBoolean)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_BOOLEAN
+            Case Break
+            Case (iDFJsonDataType = jsonTypeDouble)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_OTHER
+            Case Break
+            Case (iDFJsonDataType = jsonTypeInteger)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_INTEGER
+            Case Break
+            Case (iDFJsonDataType = jsonTypeObject)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_OBJECT
+            Case Break
+            Case (iDFJsonDataType = jsonTypeString)
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_STRING
+            Case Break
+            Case Else
+                Function_Return L8W8JWT_ADDITIONAL_CLAIMS_TYPE_OTHER
+            Case Break
+        Case End
+    End_Function
+    
+    { Visibility=Private }
+    Function EncodeJWTEx Handle hoJsonWebToken String sKeyID String ByRef sJWT Returns Integer
+        /*
+        We need to make a variable for every JSON attribute because
+        the library requires memory addresses and pointers.
+        */
+        Integer iAlgorithm iSizeOfJWTResult iParsingResult iCounter iClaimsCounter iJsontype
+        Boolean bVoid bOk
+        String sPrivateKey sSub sIss sAud sJti sJWTResult sKIDHeaderName sMemberName sMemberValue
+        String[] saBlacklistMembers
+        UBigInt ubiIat
+        Pointer pJWTResult lpMemberName lpMemberValue lpWholeList lpIterate
+        UChar[] ucaResult
+        l8w8jwt_encoding_params stl8w8jwt_encoding_params
+        l8w8jwt_additional_claims stl8w8jwt_additional_header_claims
+        l8w8jwt_additional_claims stl8w8jwt_claim_iterate 
+        l8w8jwt_additional_claims stl8w8jwt_additional_payload_claims       
+        stJWTKey tJWTPrivateKey
+        
+        If (hoJsonWebToken = 0) Function_Return C_JWT_INVALID_JSONWEBTOKEN_HANDLE
+
+        Get JWT_Encode_Init (AddressOf(stl8w8jwt_encoding_params)) to bVoid
+        //Alg
+        Get peAlgorithm of hoJsonWebToken to iAlgorithm
+        If (iAlgorithm < 0 or iAlgorithm > 11) Function_Return C_JWT_NOT_A_SUPPORTED_ALG
+        Move iAlgorithm to stl8w8jwt_encoding_params.alg
+        
+        //Additional header claims
+        Move 'kid' to sKIDHeaderName
+        Move (AddressOf(sKIDHeaderName)) to stl8w8jwt_additional_header_claims.key
+        Move (SizeOfString(sKIDHeaderName)) to stl8w8jwt_additional_header_claims.key_length
+        Move (AddressOf(sKeyID)) to stl8w8jwt_additional_header_claims.value
+        Move (SizeOfString(sKeyID)) to stl8w8jwt_additional_header_claims.value_length
+        Move L8W8JWT_ADDITIONAL_CLAIMS_TYPE_STRING to stl8w8jwt_additional_header_claims.type //String TYPE
+        //address of main struct
+        Move (AddressOf(stl8w8jwt_additional_header_claims)) to stl8w8jwt_encoding_params.additional_header_claims
+        Move (1) to stl8w8jwt_encoding_params.additional_header_claims_count
+        
+        //Secret Key
+        Get OnGetPrivateKey of hoJsonWebToken sKeyID to tJWTPrivateKey
+        If (tJWTPrivateKey.sKey = '') Begin
+            Function_Return C_JWT_INVALID_PRIVATE_KEY
+        End
+        Else Begin
+            Move tJWTPrivateKey.sKey to sPrivateKey
+            Move (AddressOf(sPrivateKey)) to stl8w8jwt_encoding_params.secret_key
+            Move (SizeOfString(sPrivateKey)) to stl8w8jwt_encoding_params.secret_key_length
+        End
+        //Sub
+        If (HasMember(hoJsonWebToken, 'sub')) Begin          
+            Get MemberValue of hoJsonWebToken 'sub' to sSub
+            Move (AddressOf(sSub)) to stl8w8jwt_encoding_params.sub
+            Move (SizeOfString(sSub)) to stl8w8jwt_encoding_params.sub_length
+        End
+        //Iss
+        If (HasMember(hoJsonWebToken, 'iss')) Begin          
+            Get MemberValue of hoJsonWebToken 'iss' to sIss
+            Move (AddressOf(sIss)) to stl8w8jwt_encoding_params.iss
+            Move (SizeOfString(sIss)) to stl8w8jwt_encoding_params.iss_length
+        End
+        //Aud
+        If (HasMember(hoJsonWebToken, 'aud')) Begin          
+            Get MemberValue of hoJsonWebToken 'aud' to sAud
+            Move (AddressOf(sAud)) to stl8w8jwt_encoding_params.aud
+            Move (SizeOfString(sAud)) to stl8w8jwt_encoding_params.aud_length
+        End
+        //JTI
+        If (HasMember(hoJsonWebToken, 'jti')) Begin          
+            Get MemberValue of hoJsonWebToken 'jti' to sJti
+            Move (AddressOf(sJti)) to stl8w8jwt_encoding_params.jti
+            Move (SizeOfString(sJti)) to stl8w8jwt_encoding_params.jti_length
+        End
+        //Iat
+        If (HasMember(hoJsonWebToken, 'iat')) Begin          
+            Get MemberValue of hoJsonWebToken 'iat' to stl8w8jwt_encoding_params.iat
+        End
+        Else Begin
+            Move 0 to stl8w8jwt_encoding_params.iat
+        End
+        //Exp
+        If (HasMember(hoJsonWebToken, 'exp')) Begin          
+            Get MemberValue of hoJsonWebToken 'exp' to stl8w8jwt_encoding_params.exp
+        End  
+        Else Begin
+            Move 0 to stl8w8jwt_encoding_params.exp
+        End
+        //Nbf
+        If (HasMember(hoJsonWebToken, 'nbf')) Begin          
+            Get MemberValue of hoJsonWebToken 'nbf' to stl8w8jwt_encoding_params.nbf
+        End  
+        Else Begin
+            Move 0 to stl8w8jwt_encoding_params.nbf
+        End
+        
+        //JWT out is a char** so we reserve a pointer and convert it later to String
+        Move (AddressOf(pJWTResult)) to stl8w8jwt_encoding_params.out
+        Move (AddressOf(iSizeOfJWTResult)) to stl8w8jwt_encoding_params.out_length
+        
+        //Additional claims
+        Move (StrSplitToArray("sub,iss,aud,iat,exp,nbf", ',')) to saBlacklistMembers
+        Move (SortArray(saBlacklistMembers)) to saBlacklistMembers
+        Move 0  to iClaimsCounter
+        
+        //Allocate a block of memory for the library to read the claims.
+        Move (Alloc(SizeOfType(l8w8jwt_additional_claims) * (MemberCount(hoJsonWebToken)))) to lpWholeList
+        Move lpWholeList to lpIterate
+        
+        //Iterate over all the members and add them to the claims, if they didn't serve their purpose already.
+        For iCounter from 0 to (MemberCount(hoJsonWebToken) -1)
+            Get MemberNameByIndex of hoJsonWebToken iCounter to sMemberName
+            If (BinarySearchArray(sMemberName, saBlacklistMembers) < 0) Begin               
+                //Allocate memory for the name string.
+                Move (Alloc(SizeOfString(sMemberName) + 1)) to lpMemberName
+                Move (MemSet(lpMemberName, 0, SizeOfString(sMemberName) + 1)) to bOk
+                Move (MemCopy(lpMemberName, AddressOf(sMemberName), SizeOfString(sMemberName))) to bOk
+                
+                //Allocate memory for the value string.
+                Get MemberValue of hoJsonWebToken sMemberName to sMemberValue
+                Move (Alloc(SizeOfString(sMemberValue) + 1)) to lpMemberValue
+                Move (MemSet(lpMemberValue, 0, SizeOfString(sMemberValue) + 1)) to bOk
+                Move (MemCopy(lpMemberValue, AddressOf(sMemberValue), SizeOfString(sMemberValue))) to bOk
+                
+                //Construct the array of claims.
+                Move (lpMemberName) to stl8w8jwt_additional_payload_claims.key
+                Move (SizeOfString(sMemberName)) to stl8w8jwt_additional_payload_claims.key_length
+                Move (lpMemberValue) to stl8w8jwt_additional_payload_claims.value
+                Move (SizeOfString(sMemberValue)) to stl8w8jwt_additional_payload_claims.value_length
+                Get MemberJsonType of hoJsonWebToken sMemberName to iJsontype
+                Get DFJsonTypeToL8W8JWTJsonType iJsontype to stl8w8jwt_additional_payload_claims.type
+                
+                //Copy the value from the struct into the allocated memory address
+                Move (MemCopy(lpIterate, AddressOf(stl8w8jwt_additional_payload_claims), SizeOfType(l8w8jwt_additional_claims))) to bOk
+                
+                //Increment the counter and memory counter for the loop.
+                Increment iClaimsCounter
+                Move (lpIterate + SizeOfType(l8w8jwt_additional_claims)) to lpIterate
+            End
+        Loop
+        
+        //Finally set the address of the root off the array in the params struct.
+        Move iClaimsCounter to stl8w8jwt_encoding_params.additional_payload_claims_count
+        If (iClaimsCounter <= 0) ;
+            Move (0) to stl8w8jwt_encoding_params.additional_payload_claims
+        Else ;
+            Move (lpWholeList) to stl8w8jwt_encoding_params.additional_payload_claims
+        
+        //Encode the encoding_params struct.
+        Get JWT_Encode (AddressOf(stl8w8jwt_encoding_params)) to iParsingResult
+        
+        //Free all the memory addresses made by the Alloc.
+        Move lpWholeList to lpIterate
+        For iCounter from 0 to (iClaimsCounter -1)
+            //Copy the memory address in the struct.
+            Move (MemCopy(AddressOf(stl8w8jwt_additional_payload_claims), lpIterate, (SizeOfType(l8w8jwt_additional_claims)))) to bOk
+            
+            //Free the 2 strings made by the alloc.
+            Move (Free(stl8w8jwt_additional_payload_claims.key)) to bOk
+            Move (Free(stl8w8jwt_additional_payload_claims.value)) to bOk
+            
+            //Iterate over the whole list
+            Move (lpIterate + SizeOfType(l8w8jwt_additional_claims)) to lpIterate
+        Loop
+        //Finally free the whole memory block.
+        Move (Free(lpWholeList)) to bOk
+        
+        //Validate if the parsing succeded in the libary.
+        If (iParsingResult <> L8W8JWT_SUCCESS) Function_Return iParsingResult
+        
+        //Convert the output pointer to a uChar[]
+        Move (PointerToString(pJWTResult)) to sJWTResult
+        If (SizeOfString(sJWTResult) <> iSizeOfJWTResult) Function_Return C_JWT_INTERNAL_ERROR
+        Move sJWTResult to sJWT
+          
+        //Free the memory on the .dll side.
+        Get JWT_Free_Memory pJWTResult to bVoid
+    End_Function
+    
+    { Visibility=Private }
+    Function VerifySignatureEx Integer iAlgorithm stJWTKey tJWTPublicKey String sJWT Returns Integer
+        Integer iValidationResult iParsingResult
+        Boolean bOk
+        String sErrorCode sPublicKey
+        UChar[] ucaData 
+        tl8w8jwt_decoding_params stDecoding_Params
+
+        //Validate the signature
+        Get JWT_Decode_Init (AddressOf(stDecoding_Params)) to bOk
+        //alg
+        Move iAlgorithm to stDecoding_Params.alg
+        //JWT
+        Move (AddressOf(sJWT)) to stDecoding_Params.jwt
+        Move (SizeOfString(sJWT)) to stDecoding_Params.jwt_length
+        //Public key
+        Move tJWTPublicKey.sKey to sPublicKey
+        Move (AddressOf(sPublicKey)) to stDecoding_Params.verification_key
+        Move (SizeOfString(sPublicKey)) to stDecoding_Params.verification_key_length
+        //Iss
+        Move C_JWT_NULL_POINTER to stDecoding_Params.validate_iss
+        Move C_JWT_NULL_POINTER to stDecoding_Params.validate_iss_length
+        //Sub
+        Move C_JWT_NULL_POINTER to stDecoding_Params.validate_sub
+        Move C_JWT_NULL_POINTER to stDecoding_Params.validate_sub_length
+        //Exp
+        Move C_JWT_NULL_POINTER to stDecoding_Params.validate_exp
+        //Iat
+        Move C_JWT_NULL_POINTER to stDecoding_Params.validate_iat
+        
+        Get JWT_Decode (AddressOf(stDecoding_Params)) (AddressOf(iValidationResult)) to iParsingResult
+        
+        If (iParsingResult <> L8W8JWT_SUCCESS) Function_Return iParsingResult
+        Else If (iValidationResult <> 0) Function_Return iValidationResult
+
+        Function_Return L8W8JWT_SUCCESS
+    End_Function
+    
+    { Visibility=Private }
+    Function ErrorCodeToErrorMessageEx Integer iErrorCode Returns String
+        String sErrorCode
+        If (iErrorCode <> L8W8JWT_SUCCESS) Begin
+            Case Begin
+                Case (iErrorCode = L8W8JWT_NULL_ARG)
+                    Move "L8W8JWT: Some argument is a NULL argument that shouldn't have been NULL." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_INVALID_ARG)
+                    Move "L8W8JWT: Invalid parameter." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_OUT_OF_MEM)
+                    Move "L8W8JWT: Allocation inside of l8w8jwt dll failed, you're out of memory." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_OVERFLOW)
+                    //https://glitchedpolygons.github.io/l8w8jwt/retcodes_8h.html#a861ddf14da3ae24f8c15f83f80d6adac
+                    Move "L8W8JWT: Not good...." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_SIGNATURE_CREATION_FAILURE)
+                    Move "L8W8JWT: Signature creation failed." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_SHA2_FAILURE)
+                    Move "L8W8JWT: One of the SHA-2 functions fails (e.g. SHA-256)." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_KEY_PARSE_FAILURE)
+                    Move "L8W8JWT: Some PEM-formatted key string couldn't be parsed." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_BASE64_FAILURE)
+                    Move "L8W8JWT: Base64(URL) encoding or decoding error." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_WRONG_KEY_TYPE)
+                    Move "L8W8JWT: Wrong public or private key type (e.g. trying to use an RSA key for ECDSA tokens, etc...)." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_MBEDTLS_CTR_DRBG_SEED_FAILURE)
+                    Move "L8W8JWT: The mbedtls_ctr_drbg_seed() function fails..." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_DECODE_FAILED_INVALID_TOKEN_FORMAT)
+                    Move "L8W8JWT: The token is invalid (format-wise)." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_DECODE_FAILED_MISSING_SIGNATURE)
+                    Move "L8W8JWT: The token is invalid because it's missing the signature (despite having specified an alg that isn't 'none')." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_UNSUPPORTED_ALG)
+                    Move "L8W8JWT: The JWT signing alg parameter that was passed is not supported." to sErrorCode
+                Case Break
+                Case (iErrorCode = L8W8JWT_SIGNATURE_VERIFICATION_FAILURE) 
+                    Move "L8W8JWT: The token was potentially tampered with: its signature couldn't be verified." to sErrorCode
+                Case Break
+            Case End
+        End
+        Else Begin
+            Move 'No Error, Success' to sErrorCode
+        End
+        Function_Return sErrorCode
+    End_Function
+    
+End_Class

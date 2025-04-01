@@ -1,0 +1,13 @@
+﻿**/config/classlist.xml
+**.dep
+**.prn
+**.manifest
+**.dbg
+**.exe
+**/IdeSrc/*
+**/LoginEncryptionKey.inc
+Demo/Programs/**.dll
+Demo/AppHtml/DfEngine/*
+Deme/AppHtml/CssThemes/*
+Demo/AppHtml/CssThemes
+Demo/AppSrc/config/classlist.xml

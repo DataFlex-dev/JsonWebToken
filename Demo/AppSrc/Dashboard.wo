@@ -1,0 +1,255 @@
+﻿Use cWebView.pkg
+Use cWebPanel.pkg
+Use cWebForm.pkg
+Use cWebButton.pkg
+Use cWebGroup.pkg
+Use cWebSpacer.pkg
+Use cWebHtmlBox.pkg
+Use cWebMenuGroup.pkg
+Use cWebMenuItem.pkg
+Use cWebLabel.pkg
+Use cWebList.pkg
+Use cWebColumn.pkg
+Use JWT\JWT.pkg
+Use JWT\UnixTime.pkg
+
+Object oDashboard is a cWebView
+    Set piMaxWidth to 1024
+    Set psCaption to "Dashboard"
+    Set peViewType to vtUndefined
+    Set pbShowCaption to False
+    Set psCSSClass to "Dashboard"
+    
+    Object oWebMainPanel is a cWebPanel
+        Set piColumnCount to 24
+        WebSetResponsive piColumnCount rmMobile to 1
+        WebSetResponsive piColumnCount rmTabletPortrait to 16
+        
+        Define C_JWT_KEY_IDENTIFIER for 'KID'
+    
+        Object oJWT is a cJsonWebToken
+            Set peAlgorithm to L8W8JWT_ALG_RS_256
+            
+            Procedure End_Construct_Object
+                Forward Send End_Construct_Object
+                Boolean bVoid
+                
+                //We set the properties here so that the variables don't become global.               
+                Get AddJWTPublicKey C_JWT_KEY_IDENTIFIER """
+                    -----BEGIN PUBLIC KEY-----
+                    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzff46shdA273c3lklEJB
+                    7TLZYVnToGT2SCDAuwMUsgyLCUtckIYxn2iZp3GUwwRcKZM1iV5xlsQGf2jDKtqY
+                    eeQbZmAEWfqT0IZXS1MpR+ai+KsjNmUdtZqV3k3Ge+yc+fgyyeeQrYqBlUOjcTjM
+                    fh2oHA56z80j366RlzSrl2KE94A/rW8IMC1NNDxsJ79S/UtfxQWPAsYgSvrWLxxI
+                    ldCoxrK6KTvF1DuskymT/mvHMyGT3Jl5zqXOkVkCXcgidMmgU8tr7Qt9SZp4SgRR
+                    zkigZ4ysjGpUfcx6C8LekYuZWJl9kPtcIpXPoUBUdZh5xa+zIEWJi1owafS/iNlI
+                    pwIDAQAB
+                    -----END PUBLIC KEY-----
+                    """ to bVoid 
+                Get AddJWTPrivateKey C_JWT_KEY_IDENTIFIER """
+                    -----BEGIN RSA PRIVATE KEY-----
+                    MIIEpgIBAAKCAQEAzff46shdA273c3lklEJB7TLZYVnToGT2SCDAuwMUsgyLCUtc
+                    kIYxn2iZp3GUwwRcKZM1iV5xlsQGf2jDKtqYeeQbZmAEWfqT0IZXS1MpR+ai+Ksj
+                    NmUdtZqV3k3Ge+yc+fgyyeeQrYqBlUOjcTjMfh2oHA56z80j366RlzSrl2KE94A/
+                    rW8IMC1NNDxsJ79S/UtfxQWPAsYgSvrWLxxIldCoxrK6KTvF1DuskymT/mvHMyGT
+                    3Jl5zqXOkVkCXcgidMmgU8tr7Qt9SZp4SgRRzkigZ4ysjGpUfcx6C8LekYuZWJl9
+                    kPtcIpXPoUBUdZh5xa+zIEWJi1owafS/iNlIpwIDAQABAoIBAQCKWTc81UsNBFt4
+                    mCDEKWFJJ6+2YXTyNv7q4f0zYNVk52H440MQ3OK2FbeoLnXjLKmPT49VbzfTMma+
+                    7Cq0PVLQBTWWZYZmvhbNqX83XGvNHRF5ANNNNUxocKacRRe+o+epTFspHb8jonZ6
+                    QY2mfqV1TQxflCZQMJYZKJQowbtEmjWo14zT+lbVZTW57Be6vntkPmWNH6eYzXPY
+                    zj20n5VZhJJ43ddg30wQqs647bLCshTpchMaN+3Z9lRDefDjfvDTZ72no7Jd2g+J
+                    HGLfWmVQttkHPC6UyMZJWwQkjop0RcKo0iDpwnWERcynQamPCFdEGbXt8WRyUbOi
+                    RrRVAwCZAoGBAPw3/9MqW270fiiQ1TMGqjwjM8ah5urniUChhc676cxCqhnv5R3j
+                    m4jNaXL1CArkqqwjTgA8GR+a1IwF+qFBvyZW+fz6gxH4RjMbIZOQZwNy1Oexfi34
+                    oSvnee/K0p+7EByyfILwFP3WXtdisa/G4SW+cOzoG85vYTvdBzpRWL3zAoGBANEO
+                    d8RDcAYfUnlSS/rhzz1Yf0DQyi9+QyISh4ZiNuxGz48+XLJ0HzrSo+orTaiqEgMN
+                    gZZ/gSwC4rLzl1hNbSRGj+maO5wb5+ab8SCIPvV31gnM+s9zzIlxKQPhKpdj3YME
+                    6U+IupgcN+UQmKEhjDeGQPpoqt2UMAz7LKApRpN9AoGBALQn29gdvUm34hVfvqm/
+                    7QEfs/AB3UuVLvi3ZziQCSQZyh7UuDdtSL+i2dt/IsuFIlPqs+B/DQMCOSf7bVaZ
+                    +8uK/O2yksTXLm16x7T7xFk2QNVuds6ndZhCs1qQ6XmmyI92/nEYxCW8Zeo7WOhR
+                    iqjHKypNcO83p6B29J63VEf5AoGBAJK7c+amasdxTqLm13uE6L+nENI+edrx5U7R
+                    8Juq7d/TJ7Xj0I5UoOLZm8EtmblrfW71GOK4JcLtV47BGJYa6iMO/823umUs1Qzw
+                    oULzPjVuYiXI4LWhEovZiC836HwP1Rcz6Eoxrr46+CRoDKjz8gW6znqz4lHZxAwo
+                    c78KmYXFAoGBAPMTqYUU4NNj1O0j8Ojt9LqYxDiAia2arckQsdHMjo8dkBuDPQQ/
+                    57cLk6WWIdtaQRj/KjJYE390xVIgP31hDCoP6MHuL3vqubmdvrgNHW8zAM5mBa+w
+                    tVwkpwjb5kisApPNyfRZYhxjRmEwoTxDOd97FdnzVFNy0l6mT2bAwhGo
+                    -----END RSA PRIVATE KEY-----
+                    """ to bVoid
+            End_Procedure
+        End_Object
+        
+        Object oWebGroup1 is a cWebGroup
+            Set psCaption to "Decoding"
+            Set piColumnCount to 12
+            
+            Object oWebForm is a cWebForm
+                Set piColumnIndex to 0
+                Set piColumnSpan to 12
+                Set psLabel to 'Json Web Token'
+                Set peLabelPosition to lpTop
+            End_Object
+            
+            Object oWebButton is a cWebButton
+                Set piColumnIndex to 10
+                Set piColumnSpan to 2
+                Set psCaption to 'Decode'
+    
+                Procedure OnClick
+                    Forward Send OnClick
+                    Integer iReturnValue
+                    String sJWT sReturnValue 
+                    String sSubject sIssuer sAudience
+                    UBigInt ubiIssuedAt ubiExpiration ubiNotBefore
+                    
+                    WebGet psValue of oWebForm to sJWT
+                    //Decoding
+                    Get DecodeString of oJWT sJWT to iReturnValue
+                    
+                    Get Subject of oJWT to sSubject
+                    Get Issuer of oJWT to sIssuer
+                    Get Audience of oJWT to sAudience
+                    Get IssuedAt of oJWT to ubiIssuedAt
+                    Get Expiration of oJWT to ubiExpiration
+                    Get NotBefore of oJWT to ubiNotBefore
+                    
+                    WebSet psValue of oWebForm1 to sSubject
+                    WebSet psValue of oWebForm2 to sIssuer
+                    WebSet psValue of oWebForm3 to sAudience
+                    WebSet psValue of oWebForm4 to ubiIssuedAt
+                    WebSet psValue of oWebForm5 to ubiExpiration
+                    WebSet psValue of oWebForm6 to ubiNotBefore
+                    
+                    If (iReturnValue <> C_JWT_VALID) Begin
+                        Send ShowInfoBox ('JWT was invalid for the follwing reason: ' + (ErrorCodeToErrorMessage(oJWT, iReturnValue))) 'Return Value Check signature'
+                    End
+                End_Procedure
+            End_Object
+        End_Object
+        
+        Object oWebGroup2 is a cWebGroup
+            Set psCaption to "Encoding"
+            Set piColumnCount to 12
+
+            Object oWebForm1 is a cWebForm
+                Set psLabel to "Subject"
+                Set peLabelPosition to lptop
+                Set piColumnSpan to 6
+            End_Object
+
+            Object oWebForm2 is a cWebForm
+                Set piColumnSpan to 6
+                Set psLabel to "Issuer"
+                Set peLabelPosition to lptop
+                Set piColumnIndex to 6
+            End_Object
+
+            Object oWebForm3 is a cWebForm
+                Set piColumnSpan to 0
+                Set piColumnSpan to 6
+                Set psLabel to "Audience"
+                Set peLabelPosition to lptop
+            End_Object
+
+            Object oWebForm4 is a cWebForm
+                Set piColumnSpan to 6
+                Set psLabel to "Issued At"
+                Set peLabelPosition to lptop
+                Set piColumnIndex to 6
+                
+                Procedure OnLoad
+                    Forward Send OnLoad
+                    UBigInt ubiUnixTime
+                    
+                    //We need to substract one hour because we need UTC time.
+                    Get CurrentUnixTime to ubiUnixTime
+                    Set psValue to ubiUnixTime
+                End_Procedure
+            End_Object
+
+            Object oWebForm5 is a cWebForm
+                Set piColumnSpan to 0
+                Set piColumnSpan to 6
+                Set psLabel to "Expiration"
+                Set peLabelPosition to lptop
+                
+                Procedure OnLoad
+                    Forward Send OnLoad
+                    UBigInt ubiUnixTime
+                    
+                    //We need to substract one hour because we need UTC time.
+                    Get CurrentUnixTime to ubiUnixTime
+                    //We also need to add a specific amount of time to set the expiredate in the future.
+                    Move (ubiUnixTime + 3600) to ubiUnixTime
+                    Set psValue to ubiUnixTime
+                End_Procedure
+            End_Object
+
+            Object oWebForm6 is a cWebForm
+                Set piColumnSpan to 6
+                Set psLabel to "Not Before"
+                Set peLabelPosition to lptop
+                Set piColumnIndex to 6
+                
+                Procedure OnLoad
+                    Forward Send OnLoad
+                    UBigInt ubiUnixTime
+                    
+                    //We need to substract one hour because we need UTC time.
+                    Get CurrentUnixTime to ubiUnixTime
+                    //We also need to add a specific amount of time to set the expiredate in the future.
+                    Move (ubiUnixTime - 3600) to ubiUnixTime
+                    Set psValue to ubiUnixTime
+                End_Procedure
+            End_Object
+            
+            Object oWebCombo is a cWebCombo
+                Set piColumnIndex to 6
+                Set piColumnSpan to 4
+                Set psLabel to "KeyID"
+                Set piLabelOffset to 60
+
+                Procedure OnFill
+                    Forward Send OnFill
+                    Integer iCounter
+                    stJWTKey[] stPrivateKeys
+                    
+                    Get pstaJWTPrivateKeys of oJWT to stPrivateKeys
+                    
+                    For iCounter from 0  to (SizeOfArray(stPrivateKeys) -1)
+                        Send AddComboItem stPrivateKeys[iCounter].sKeyIdentifier stPrivateKeys[iCounter].sKeyIdentifier
+                    Loop
+                End_Procedure   
+            End_Object
+
+            Object oWebButton1 is a cWebButton
+                Set piColumnSpan to 2
+                Set psCaption to "Encode"
+                Set piColumnIndex to 10
+            
+                Procedure OnClick
+                    Boolean bOk
+                    String sValue sKeyID
+                    UBigInt ubiUnixTime
+                    
+                    WebGet psValue of oWebForm1 to sValue
+                    Set Subject of oJWT to sValue
+                    WebGet psValue of oWebForm2 to sValue
+                    Set Issuer of oJWT to sValue
+                    WebGet psValue of oWebForm3 to sValue
+                    Set Audience of oJWT to sValue
+                    WebGet psValue of oWebForm4 to ubiUnixTime
+                    Set IssuedAt of oJWT to ubiUnixTime
+                    WebGet psValue of oWebForm5 to ubiUnixTime
+                    Set Expiration of oJWT to ubiUnixTime
+                    WebGet psValue of oWebForm6 to ubiUnixTime
+                    Set NotBefore of oJWT to ubiUnixTime
+                    
+                    WebGet psValue of oWebCombo to sKeyID
+                    //Encoding
+                    Get EncodeString of oJWT sKeyID to sValue
+                    WebSet psValue of oWebForm to sValue
+                End_Procedure
+            End_Object
+        End_Object
+    End_Object
+End_Object

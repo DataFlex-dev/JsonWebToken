@@ -1,0 +1,143 @@
+﻿Use cWebSessionManagerStandard.pkg
+
+Use JWT\JWT.pkg
+
+Class cWebJWTSessionManagerToken is a cJsonWebToken
+    Function OnGetPrivateKey String sKeyID Returns stJWTKey
+        stJWTKey RetVal
+        Move "default" to RetVal.sKeyIdentifier
+        Move (psEncryptPassword(ghoWebApp)) to RetVal.sKey
+        Function_Return RetVal
+    End_Function
+End_Class
+
+{ HelpTopic=cWebSessionManagerStandard }
+Class cWebJWTSessionManager is a cWebSessionManagerStandard
+    
+    Procedure Construct_Object
+        Forward Send Construct_Object
+        
+        Send Detach_Server of (phoSessionDD(Self)) (phoUserDD(Self))
+        Send Destroy of (phoSessionDD(Self))
+        Set phoSessionDD to 0
+        
+        Object oJWT is a cWebJWTSessionManagerToken
+        End_Object
+    End_Procedure
+    
+    Function CreateSession String sRemoteAddress Returns String
+        Function_Return "" // Does nothing and will cause an empty jwt token.
+    End_Function
+    
+    Function ValidateSession String sSessionKey Boolean bOptLoadWebApp Returns Boolean
+        Handle hoUserDD
+        Get phoUserDD to hoUserDD
+        
+        //  Clear session properties
+        Set psSessionKey to ""
+        Send UpdateSessionProperties True
+        
+        // Check if sSessionKey is empty, for public session, depend on IsLogged in and session key comparison
+        If (SizeOfString(sSessionKey) = 0) Begin
+            Function_Return True
+        End
+        
+        // But if there is a session, validate it.
+        If (DecodeString(oJWT, sSessionKey) < C_JWT_VALID) Begin
+            Error DFERR_WEBAPP_BAD_SESSION_KEY "Invalid session key."
+            Function_Return False
+        End
+        
+        If (IsExpired(oJWT)) Begin
+            Error DFERR_WEBAPP_SESSION_TIMEOUT "Your application session has timed out, please login again."
+            Function_Return False
+        End
+        If (IsNotYetActive(oJWT)) Begin
+            Error DFERR_WEBAPP_SESSION_TIMEOUT "Your application session is not yet ctive, please login again."
+            Function_Return False
+        End
+        
+        // Check if user exists
+        Send Clear of hoUserDD
+        Get Subject of oJWT to WebAppUser.LoginName
+        Send Find of hoUserDD EQ Index.1
+        
+        If (not(Found)) Function_Return False
+        
+        Set psSessionKey to sSessionKey
+        Send UpdateSessionProperties False
+        
+        Function_Return True
+    End_Function
+    
+    Procedure EndSession
+    End_Procedure
+    
+    Function UserLogin String sLoginName String sPassword Returns Boolean
+        Handle hoUserDD
+        Integer iErr eLoginMode
+        Boolean bMatch bUpgrade
+        String sUserPassword sJWT
+        
+        Get phoUserDD to hoUserDD
+        Get peLoginMode to eLoginMode
+        
+        // Find the user
+        Send Clear of hoUserDD
+        Move sLoginName to WebAppUser.LoginName
+        Send Find of hoUserDD EQ Index.1
+        
+        // Check username and password
+        If (Found and (Lowercase(sLoginName) = Lowercase(Trim(WebAppUser.LoginName)))) Begin
+            Get Field_Current_Value of hoUserDD Field WebAppUser.Password to sUserPassword
+            Get VerifyPasswordHash (Trim(sUserPassword)) (Trim(sPassword)) (&bUpgrade) to bMatch
+            
+            If (bMatch) Begin
+                // Store the login
+                If (bUpgrade) Begin
+                    Get CreatePasswordHash (Trim(sPassword)) (&sPassword) to bUpgrade
+                    If (bUpgrade) Set Field_Changed_Value of hoUserDD Field WebAppUser.Password to sPassword
+                End
+                Set Field_Changed_Value of hoUserDD Field WebAppUser.LastLogin to (CurrentDateTime())
+                Get Request_Validate of hoUserDD to iErr
+                If (iErr) Begin
+                    // this should not happen. If it does its a programming error
+                    Error DFERR_PROGRAM C_$WebAppSessionValidateFailed
+                    Function_Return False
+                End
+                
+                Send Request_Save of hoUserDD
+                
+                // Store the login
+                Send Clear of oJWT
+                Set Subject of oJWT to (Trim(WebAppUser.LoginName))
+                Set Issuer of oJWT to "dfWebApp"
+                Set ExpirationAfterHours of oJWT to 1
+                Get EncodeString of oJWT "default" to sJWT
+                
+                Set psSessionKey to sJWT
+                Send StoreSessionKey of oWebApp sJWT
+                
+                // Update session properties
+                Send UpdateSessionProperties False
+                Send NotifyChangeRights
+                Function_Return True
+            End
+            Else Begin
+                //  We should rely directly on this buffer elsewhere but just be sure
+                Send Clear of hoUserDD
+            End
+        End
+        Else Begin
+            // This is added to delay latency to avoid hackers finding out whether the user exists or not.
+            Get CreatePasswordHash "This is to delay the response latency." (&sPassword) to iErr
+        End
+          
+        Function_Return False
+    End_Function
+    
+    Function IsLoggedIn Returns Boolean
+        Function_Return (psLoginName(Self) <> "")
+    End_Function
+
+End_Class

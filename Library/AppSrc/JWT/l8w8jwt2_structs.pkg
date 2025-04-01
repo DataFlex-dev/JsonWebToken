@@ -1,0 +1,429 @@
+﻿//l8j8jwt return values in bits. 
+{ Visibility=Private } //For now this does nothing, in the future they will maybe include it in DF.
+Enum_List
+    /**
+     * The JWT is valid (according to the passed validation parameters).
+     */
+    { Visibility=Private }
+    Define L8W8JWT_VALID for 0
+    /**
+     * The issuer claim is invalid.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_ISS_FAILURE for 1
+    /**
+     * The subject claim is invalid.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_SUB_FAILURE for 2
+    /**
+     * The audience claim is invalid.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_AUD_FAILURE for 4
+    /**
+     * The JWT ID claim is invalid.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_JTI_FAILURE for 8
+    /**
+     * The token is expired.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_EXP_FAILURE for 16
+    /**
+     * The token is not yet valid.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_NBF_FAILURE for 32
+    /**
+     * The token was not issued yet, are you from the future?
+     */
+    { Visibility=Private }
+    Define L8W8JWT_IAT_FAILURE for 64
+    /**
+     * The token was potentially tampered with: its signature couldn't be verified.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_SIGNATURE_VERIFICATION_FAILURE for 128
+    /**
+     * The token's "typ" claim validation failed.
+     */
+    { Visibility=Private }
+    Define L8W8JWT_TYP_FAILURE for 256
+End_Enum_List
+
+//l8w8jwt return codes
+{ Visibility=Private }
+Enum_List
+    { Visibility=Private }
+    Define L8W8JWT_SUCCESS for 0  
+    { Visibility=Private }     
+    Define L8W8JWT_NULL_ARG for 100   
+    { Visibility=Private }
+    Define L8W8JWT_INVALID_ARG for 200
+    { Visibility=Private }
+    Define L8W8JWT_OUT_OF_MEM for 300
+    { Visibility=Private }
+    Define L8W8JWT_OVERFLOW for 310
+    { Visibility=Private }
+    Define L8W8JWT_SIGNATURE_CREATION_FAILURE for 400
+    { Visibility=Private }
+    Define L8W8JWT_SHA2_FAILURE for 410
+    { Visibility=Private }
+    Define L8W8JWT_KEY_PARSE_FAILURE for 420
+    { Visibility=Private }
+    Define L8W8JWT_BASE64_FAILURE for 425
+    { Visibility=Private }
+    Define L8W8JWT_WRONG_KEY_TYPE for 450
+    { Visibility=Private }
+    Define L8W8JWT_MBEDTLS_CTR_DRBG_SEED_FAILURE for 500
+    { Visibility=Private }
+    Define L8W8JWT_DECODE_FAILED_INVALID_TOKEN_FORMAT for 600
+    { Visibility=Private }
+    Define L8W8JWT_DECODE_FAILED_MISSING_SIGNATURE for 700
+    { Visibility=Private }
+    Define L8W8JWT_UNSUPPORTED_ALG for 800
+End_Enum_List
+
+//Algorithms that are supported within the library, needs to be the same as the frontend.
+{ Visibility=Private }
+Enum_List
+    { Visibility=Private }
+    Define L8W8JWT_ALG_HS_256 for 0
+    { Visibility=Private }
+    Define L8W8JWT_ALG_HS_384
+    { Visibility=Private }
+    Define L8W8JWT_ALG_HS_512
+    { Visibility=Private }
+    Define L8W8JWT_ALG_RS_256
+    { Visibility=Private }
+    Define L8W8JWT_ALG_RS_384
+    { Visibility=Private }
+    Define L8W8JWT_ALG_RS_512
+    { Visibility=Private }
+    Define L8W8JWT_ALG_PS_256
+    { Visibility=Private }
+    Define L8W8JWT_ALG_PS_384
+    { Visibility=Private }
+    Define L8W8JWT_ALG_PS_512
+    { Visibility=Private }
+    Define L8W8JWT_ALG_ES_256
+    { Visibility=Private }
+    Define L8W8JWT_ALG_ES_384
+    { Visibility=Private }
+    Define L8W8JWT_ALG_ES_512
+End_Enum_List
+
+{ Visibility=Private }
+Struct tl8w8jwt_decoding_params //Total size = 32bit: 76 alignment: 4, 64-bit: 136 alignment: 8
+    /**
+     * The token to decode and validate.
+     */
+    Pointer jwt
+    
+    Longptr jwt_length
+    /**
+     * The signature algorithm ID. <p>
+     * [02] for HS256/384/512 | [35] for RS256/384/512 | [68] for PS256/384/512 | [911] for ES256/384/512 <p>
+     * This affects what should be the value of {@link #verification_key}
+     */
+    Integer alg
+
+#IFDEF IS$WIN64
+    Integer iMissingAlignment1
+#ENDIF
+    /**
+     * [OPTIONAL] The issuer claim (who issued the JWT?). <p>
+     * Set to <code>NULL</code> if you don't want to validate the issuer. <p>
+     * The JWT will only pass verification if its <code>iss</code> claim matches this string.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.1
+     */
+    Pointer validate_iss
+    
+    /**
+     * validate_iss string length.
+     */
+    Longptr validate_iss_length
+
+    /**
+     * [OPTIONAL] The subject claim (who is the JWT about?). <p>
+     * Set to <code>NULL</code> if you don't want to validate the subject claim. <p>
+     * The JWT will only pass verification if its <code>sub</code> matches this string.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.2
+     */
+    Pointer validate_sub
+
+    /**
+     * validate_sub string length.
+     */
+    Longptr validate_sub_length
+
+    /**
+     * [OPTIONAL] The audience claim (who is the JWT intended for? Who is the intended JWT's recipient?). <p>
+     * Set to <code>NULL</code> if you don't want to validate the audience. <p>
+     * The JWT will only pass verification if its <code>aud</code> matches this string.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.3
+     */
+    Pointer validate_aud
+
+    /**
+     * validate_aud string length.
+     */
+    Longptr validate_aud_length
+
+    /**
+     * [OPTIONAL] The JWT ID. Provides a unique identifier for the token. <p>
+     * Set to <code>NULL</code> if you don't want to validate the jti claim. <p>
+     * The JWT will only pass verification if its <code>jti</code> matches this string.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.7
+     */
+    Pointer validate_jti
+
+    /**
+     * validate_jti claim length.
+     */
+    Longptr validate_jti_length
+
+    /**
+     * Should the expiration claim be verified?
+     * If this is set to <code>1</code>, the <code>exp</code> claim will be compared to the current date and time + {@link #exp_tolerance_seconds}
+     */
+    Integer validate_exp
+
+    /**
+     * Should the "not before" claim be verified?
+     * If this is set to <code>1</code>, the <code>nbf</code> claim will be compared to the current date and time + {@link #nbf_tolerance_seconds}
+     */
+    Integer validate_nbf
+    
+    /**
+     * Should the "issued at" claim be verified?
+     * If this is set to <code>1</code>, the <code>iat</code> claim will be compared to the current date and time + {@link #iat_tolerance_seconds}
+     */
+    Integer validate_iat
+
+    /**
+     * Small inconsistencies in time can happen, or also latency between clients and servers.
+     * That's just life. You can forgive a few seconds of expiration, but don't exaggerate this! <p>
+     * Only taken into consideration if {@link #validate_exp} is set to <code>1</code>.
+     */
+    UChar exp_tolerance_seconds
+
+    /**
+     * The amount of seconds to subtract from the current time when comparing the "not before" claim, to allow for a small tolerance time frame.
+     * Only taken into consideration if {@link #validate_nbf} is set to <code>1</code>.
+     */
+    UChar nbf_tolerance_seconds
+
+    /**
+     * The amount of seconds to subtract from the current time when comparing the "issued at" claim, to allow for a small tolerance time frame.
+     * Only taken into consideration if {@link #validate_iat} is set to <code>1</code>.
+     */
+    UChar iat_tolerance_seconds
+
+    /*After this is 16 bytes whole*/
+    UChar iMissingAlignment2
+
+    /**
+     * The key to use for verifying the token's signature
+     * (e.g. if you chose HS256 as algorithm, this will be the HMAC secret for RS512 this will be the PEM-formatted public RSA key string, etc...).
+     */
+    Pointer verification_key //pointer of uchar[]
+
+    /**
+     * Length of the {@link #verification_key}
+     */
+    Longptr verification_key_length
+
+    /**
+     * [OPTIONAL] The typ claim (what type is the token?). <p>
+     * Set to <code>NULL</code> if you don't want to validate the "typ" claim. <p>
+     */
+    Pointer validate_typ
+
+    /**
+     * validate_typ string length.
+     */
+    Longptr validate_typ_length
+End_Struct
+
+{ Visibility=Private }
+Struct l8w8jwt_encoding_params //Total size = 32bit: 104 alignment: 8, 64-bit: 176 alignment: 8
+
+    /**
+     * The signature algorithm ID. <p>
+     * [0;2] for HS256/384/512 | [3;5] for RS256/384/512 | [6;8] for PS256/384/512 | [9;11] for ES256/384/512
+     */
+    Integer alg
+    
+#IFDEF IS$WIN64
+    Integer iMissingAlignment1
+#ENDIF
+    
+    /**
+     * [OPTIONAL] The issuer claim (who issued the JWT?). Can be omitted by setting this to <code>NULL</code>.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.1
+     */
+    Pointer iss
+
+    /**
+     * iss claim string length.
+     */
+    Longptr iss_length
+
+    /**
+     * [OPTIONAL] The subject claim (who is the JWT about?). Set to <code>NULL</code> if you don't want it in your token.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.2
+     */
+    Pointer sub
+
+    /**
+     * sub claim string length.
+     */
+    Longptr sub_length
+
+    /**
+     * [OPTIONAL] The audience claim (who is the JWT intended for? Who is the intended JWT's recipient?).
+     * Set this to <code>NULL</code> if you don't wish to add this claim to the token.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.3
+     */
+    Pointer aud
+
+    /**
+     * aud claim string length.
+     */
+    Longptr aud_length
+
+    /**
+     * [OPTIONAL] The JWT ID. Provides a unique identifier for the token. Can be omitted by setting this to <code>NULL</code>.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.7
+     */
+    Pointer jti
+
+    /**
+     * jti claim string length.
+     */
+    Longptr jti_length
+    
+    //Padding for 32-bits. 
+    #IFNDEF IS$WIN64
+        Integer iMissingAlignment2
+    #ENDIF
+
+    /**
+     * Expiration time claim; specifies when this token should stop being valid (in seconds since Unix epoch). <p>
+     * If you want to omit this, set this to <code>0</code>, but do NOT FORGET to set it to something,
+     * otherwise it will be set to whatever random value was in the memory where this variable resides.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.4
+     */
+    UBigInt exp
+
+    /**
+     * "Not before" time claim; specifies when this token should start being valid (in seconds since Unix epoch). <p>
+     * If you want to omit this, set this to <code>0</code>, but do NOT FORGET to set it to something,
+     * otherwise it will be set to whatever random value was in the memory where this variable resides.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.5
+     */
+    UBigInt nbf
+
+    /**
+     * "Issued at" timestamp claim; specifies when this token was emitted (in seconds since Unix epoch). <p>
+     * If you want to omit this, set this to <code>0</code>, but do NOT FORGET to set it to something,
+     * otherwise it will be set to whatever random value was in the memory where this variable resides.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.6
+     */
+    UBigInt iat
+
+    /**
+     * [OPTIONAL] Array of additional claims to include in the JWT's header like for example "kid" or "cty"; pass <code>NULL</code> if you don't wish to add any! <p>
+     * Avoid header claims such as <code>typ</code> and <code>alg</code>, since those are written by the encoding function itself.
+     * @see https://tools.ietf.org/html/rfc7519#section-4.1.7
+     */
+    Pointer additional_header_claims
+
+    /**
+     * [OPTIONAL] The additional_header_claims array size; pass <code>0</code> if you don't wish to include any custom claims!
+     */
+    Longptr additional_header_claims_count
+
+    /**
+     * [OPTIONAL] Array of additional claims to include in the JWT's payload; pass <code>NULL</code> if you don't wish to add any! <p>
+     * Registered claim names such as "iss", "exp", etc... have their own dedicated field within this struct: do not include those in this array to prevent uncomfortable duplicates!
+     * @see https://tools.ietf.org/html/rfc7519#section-4
+     */
+    Pointer additional_payload_claims
+
+    /**
+     * [OPTIONAL] The additional_payload_claims array size; pass <code>0</code> if you don't wish to include any custom claims!
+     */
+    Longptr additional_payload_claims_count
+
+    /**
+     * The secret key to use for signing the token
+     * (e.g. if you chose HS256 as algorithm, this will be the HMAC secret; for RS512 this will be the private PEM-formatted RSA key string, and so on...).
+     */
+    Pointer secret_key
+    
+    /**
+     * Length of the secret_key
+     */
+    Longptr secret_key_length
+
+    /**
+     * If the secret key requires a password for usage, please assign it to this field. <p>
+     * You can only omit this when using JWT algorithms "HS256", "HS384" or "HS512" (it's ignored in that case actually). <p>
+     * Every other algorithm requires you to at least set this to <code>NULL</code> if the {@link #secret_key} isn't password-protected.
+     */
+    Pointer secret_key_pw
+
+    /**
+     * The secret key's password length (If there is any). If there's none, set this to zero!
+     */
+    Longptr secret_key_pw_length
+
+    /**
+     * Where the encoded token should be written into
+     * (will be malloc'ed, so make sure to <code>l8w8jwt_free()</code> this as soon as you're done using it!).
+     */
+    Pointer out
+
+    /**
+     * Where the output token string length should be written into.
+     */
+    Pointer out_length
+End_Struct
+
+{ Visibility=Private }
+Enum_List 
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_STRING for 0
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_INTEGER
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_NUMBER
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_BOOLEAN
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_NULL
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_ARRAY
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_OBJECT
+    { Visibility=Private }
+    Define L8W8JWT_ADDITIONAL_CLAIMS_TYPE_OTHER
+End_Enum_List
+
+{ Visibility=Private }
+Struct l8w8jwt_additional_claims
+    Pointer key
+    Longptr key_length
+    Pointer value
+    Longptr value_length
+    Integer type //USE THE ENUM ABOVE
+    
+    //Padding for 64-bits. 
+    #IFDEF IS$WIN64
+        Integer iMissingAlignment1
+    #ENDIF
+End_Struct

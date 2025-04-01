@@ -1,0 +1,548 @@
+﻿Use JWT\UnixTime.pkg
+Use cJsonObject.pkg
+
+Enum_List
+    Define C_JWT_INTERNAL_ERROR for -999
+    Define C_JWT_NO_KEY_ID_PRESENT for -9
+    Define C_JWT_INVALID_PRIVATE_KEY for -8
+    Define C_JWT_INVALID_PUBLIC_KEY for -7
+    Define C_JWT_INVALID_JSONWEBTOKEN_HANDLE for -6
+    Define C_JWT_NOT_A_SUPPORTED_ALG for -5
+    Define C_JWT_NOT_A_JWT for -4
+    Define C_JWT_INVALID for -3
+    Define C_JWT_IS_NOT_YET_ACTIVE for -2
+    Define C_JWT_EXPIRED for -1
+    Define C_JWT_VALID for 0
+End_Enum_List
+
+//Algorithms names. Values must corespond with backend.
+Enum_List
+    Define C_JWT_ALG_HS_256 for 0
+    Define C_JWT_ALG_HS_384
+    Define C_JWT_ALG_HS_512
+    Define C_JWT_ALG_RS_256
+    Define C_JWT_ALG_RS_384
+    Define C_JWT_ALG_RS_512
+    Define C_JWT_ALG_PS_256
+    Define C_JWT_ALG_PS_384
+    Define C_JWT_ALG_PS_512
+    Define C_JWT_ALG_ES_256
+    Define C_JWT_ALG_ES_384
+    Define C_JWT_ALG_ES_512
+End_Enum_List
+
+Class cBaseJsonWebToken is a cJsonObject
+    
+    Struct stJWTKey
+        { Name="kid" } 
+        String sKeyIdentifier
+        String sKey
+    End_Struct
+    
+    Procedure Construct_Object
+        Forward Send Construct_Object
+        
+        Send InitializeJsonType jsonTypeObject
+        
+        Property Boolean pbUpdateIssuedAt
+        
+        Property stJWTKey[] pstaJWTPublicKeys
+        Property stJWTKey[] pstaJWTPrivateKeys
+        {EnumList="C_JWT_ALG_HS_256 C_JWT_ALG_HS_384 C_JWT_ALG_HS_512 C_JWT_ALG_RS_256 C_JWT_ALG_RS_384 C_JWT_ALG_RS_512 C_JWT_ALG_PS_256 C_JWT_ALG_PS_384 C_JWT_ALG_PS_512 C_JWT_ALG_ES_256 C_JWT_ALG_ES_384 C_JWT_ALG_ES_512"}
+        Property Integer peAlgorithm C_JWT_ALG_HS_512
+    End_Procedure
+    
+    { MethodType=Event }
+    Function OnGetPublicKey String sKeyID Returns stJWTKey
+        stJWTKey tJWTPublicKey
+        stJWTKey[] taJWTPublicKeys
+        Integer iSearchValue 
+        
+        Get pstaJWTPublicKeys to taJWTPublicKeys
+        
+        Move sKeyID to tJWTPublicKey.sKeyIdentifier
+        Move (BinarySearchArray(tJWTPublicKey, taJWTPublicKeys, False)) to iSearchValue
+        If (iSearchValue = -1) Begin
+            Function_Return tJWTPublicKey //Empty key
+        End
+        
+        Move taJWTPublicKeys[iSearchValue] to tJWTPublicKey
+        Function_Return tJWTPublicKey
+    End_Function
+    
+    Function AddJWTPublicKey String sKID String sKey  Returns Boolean
+        stJWTKey[] taJWTPublicKeys
+        stJWTKey tJWTPublicKey
+        Integer iSearchIndex 
+        
+        Get pstaJWTPublicKeys to taJWTPublicKeys
+        Move sKID to tJWTPublicKey.sKeyIdentifier
+        Move sKey to tJWTPublicKey.sKey
+        
+        Move (BinarySearchArray(tJWTPublicKey, taJWTPublicKeys, False)) to iSearchIndex
+        If (iSearchIndex = -1) Begin
+            Move (BinarySearchInsertPos()) to iSearchIndex
+            If (iSearchIndex <> -1) Begin
+                Move (InsertInArray(taJWTPublicKeys, iSearchIndex, tJWTPublicKey)) to taJWTPublicKeys
+                Set pstaJWTPublicKeys to taJWTPublicKeys
+                Function_Return True
+            End
+        End
+        Function_Return False
+    End_Function
+    
+    Function RemoveJWTPublicKey stJWTKey tJWTPublicKey Returns Boolean
+        stJWTKey[] taJWTPublicKeys
+        Integer iSearchIndex 
+        
+        Get pstaJWTPublicKeys to taJWTPublicKeys
+        
+        Move (BinarySearchArray(tJWTPublicKey, taJWTPublicKeys, False)) to iSearchIndex
+        If (iSearchIndex = -1) Begin
+            Function_Return False
+        End
+        Move (RemoveFromArray(taJWTPublicKeys, iSearchIndex)) to taJWTPublicKeys
+        Set pstaJWTPublicKeys to taJWTPublicKeys
+        Function_Return True
+    End_Function
+    
+    { MethodType=Event }
+    Function OnGetPrivateKey String sKeyID Returns stJWTKey
+        stJWTKey tJWTPrivateKey
+        stJWTKey[] taJWTPrivateKey
+        Integer iSearchValue 
+        
+        Get pstaJWTPrivateKeys to taJWTPrivateKey
+        
+        Move sKeyID to tJWTPrivateKey.sKeyIdentifier
+        Move (BinarySearchArray(tJWTPrivateKey, taJWTPrivateKey, False)) to iSearchValue
+        If (iSearchValue = -1) Begin
+            Function_Return tJWTPrivateKey
+        End
+        
+        Move taJWTPrivateKey[iSearchValue] to tJWTPrivateKey
+        Function_Return tJWTPrivateKey
+    End_Function
+    
+    Function AddJWTPrivateKey String sKID String sKey Returns Boolean
+        stJWTKey[] taJWTPrivateKeys
+        stJWTKey tJWTPrivateKey
+        Integer iSearchIndex 
+        
+        Get pstaJWTPrivateKeys to taJWTPrivateKeys
+        Move sKID to tJWTPrivateKey.sKeyIdentifier
+        Move sKey to tJWTPrivateKey.sKey
+        
+        Move (BinarySearchArray(tJWTPrivateKey, taJWTPrivateKeys, False)) to iSearchIndex
+        If (iSearchIndex = -1) Begin
+            Move (BinarySearchInsertPos()) to iSearchIndex
+            If (iSearchIndex <> -1) Begin
+                Move (InsertInArray(taJWTPrivateKeys, iSearchIndex, tJWTPrivateKey)) to taJWTPrivateKeys
+                Set pstaJWTPrivateKeys to taJWTPrivateKeys
+                Function_Return True
+            End
+        End
+        Function_Return False
+    End_Function
+    
+    Function RemoveJWTPublicKey stJWTKey tJWTPrivateKey Returns Boolean
+        stJWTKey[] taJWTPrivateKeys
+        Integer iSearchIndex 
+        
+        Get pstaJWTPublicKeys to taJWTPrivateKeys
+        
+        Move (BinarySearchArray(tJWTPrivateKey, taJWTPrivateKeys, False)) to iSearchIndex
+        If (iSearchIndex = -1) Begin
+            Function_Return False
+        End
+        Move (RemoveFromArray(taJWTPrivateKeys, iSearchIndex)) to taJWTPrivateKeys
+        Set pstaJWTPublicKeys to taJWTPrivateKeys
+        Function_Return True
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set JWTID String sValue
+        Send SetMemberValue "jti" jsonTypeString sValue 
+    End_Procedure
+    { MethodType=Property }
+    Function JWTID Returns String
+        If (not(HasMember(Self, "jti"))) Function_Return ""
+        Function_Return (MemberValue(Self, "jti"))
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set Subject String sValue
+        Send SetMemberValue "sub" jsonTypeString sValue 
+    End_Procedure
+    { MethodType=Property }
+    Function Subject Returns String
+        If (not(HasMember(Self, "sub"))) Function_Return ""
+        Function_Return (MemberValue(Self, "sub"))
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set Audience String sValue
+        Send SetMemberValue "aud" jsonTypeString sValue 
+    End_Procedure
+    { MethodType=Property }
+    Function Audience Returns String
+        If (not(HasMember(Self, "aud"))) Function_Return ""
+        Function_Return (MemberValue(Self, "aud"))
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set Issuer String sValue
+        Send SetMemberValue "iss" jsonTypeString sValue 
+    End_Procedure
+    { MethodType=Property }
+    Function Issuer Returns String
+        If (not(HasMember(Self, "iss"))) Function_Return ""
+        Function_Return (MemberValue(Self, "iss"))
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set Expiration UBigInt ullValue
+        Send SetMemberValue "exp" jsonTypeInteger ullValue 
+    End_Procedure
+    { MethodType=Property }
+    Function Expiration Returns UBigInt
+        Function_Return (MemberValue(Self, "exp"))
+    End_Function
+    Function HasExpiration Returns Boolean
+        Function_Return (HasMember(Self, "exp"))
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set ExpirationAfterSeconds UBigInt ullValue
+        Set Expiration to (CurrentUnixTime() + ullValue)
+    End_Procedure
+    
+    { MethodType=Property }
+    Procedure Set ExpirationAfterMinutes UBigInt ullValue
+        Set Expiration to (CurrentUnixTime() + (ullValue * 60))
+    End_Procedure
+    
+    { MethodType=Property }
+    Procedure Set ExpirationAfterHours UBigInt ullValue
+        Set Expiration to (CurrentUnixTime() + (ullValue * 60 * 60))
+    End_Procedure
+    
+    { MethodType=Property }
+    Procedure Set IssuedAt UBigInt ullValue
+        Send SetMemberValue "iat" jsonTypeInteger ullValue 
+    End_Procedure
+    { MethodType=Property }
+    Function IssuedAt Returns UBigInt
+        If (not(HasMember(Self, "iat"))) Function_Return 0
+        Function_Return (MemberValue(Self, "iat"))
+    End_Function
+    
+    { MethodType=Property }
+    Procedure Set NotBefore UBigInt ullValue
+        Send SetMemberValue "nbf" jsonTypeInteger ullValue 
+    End_Procedure
+    { MethodType=Property }
+    Function NotBefore Returns UBigInt
+        If (not(HasMember(Self, "nbf"))) Function_Return 0
+        Function_Return (MemberValue(Self, "nbf"))
+    End_Function
+    
+    Function IsExpired Returns Boolean
+        UBigInt ullValue
+        If (not(HasExpiration(Self))) Function_Return False
+        Get Expiration to ullValue
+        Function_Return (CurrentUnixTime() >= ullValue)
+    End_Function
+    
+    Function IsNotYetActive Returns Boolean
+        UBigInt ullCurrent ullExp ullNbf
+        Get CurrentUnixTime to ullCurrent
+        Get NotBefore to ullNbf
+        Function_Return (ullCurrent < ullNbf)
+    End_Function
+    
+    { Visibility=Private }
+    Function ToUCharArray String sKeyID Returns UChar[]
+        Integer iRetVal
+        String sJWT sErrorString
+        UChar[] ucaResult
+        
+        Get EncodeJWTEx Self sKeyID (&sJWT) to iRetVal
+        If (iRetVal <> 0) Begin
+            Get ErrorCodeToErrorMessage iRetVal to sErrorString
+            Move (StringToUCharArray(sErrorString)) to ucaResult
+        End
+        Else Move (StringToUCharArray(sJWT)) to ucaResult
+
+        Function_Return ucaResult
+    End_Function
+    
+    Procedure Clear
+        Send InitializeJsonType jsonTypeObject
+    End_Procedure
+    
+    Function EncodeString String sKeyID Returns String
+        Boolean bUpdateIssuedAt
+        UBigInt ubiCurrentUnixTime
+        //Update Issued at based on property before encoding the String.
+        Get pbUpdateIssuedAt to bUpdateIssuedAt
+        If (bUpdateIssuedAt) Begin
+            Get CurrentUnixTime to ubiCurrentUnixTime
+            Set IssuedAt to ubiCurrentUnixTime
+        End
+        
+        Function_Return (UCharArrayToString(ToUCharArray(Self, sKeyID)))
+    End_Function
+    
+    Function FromUCharArray UChar[] ucaData Returns Integer
+        Boolean bOk
+        Integer iIndex iDots iBodyOffset iSignatureOffset iValidationResult iAlg iRetVal
+        UChar[] ucaTemp ucaHash ucaKey
+        Handle hoJWT hoL8W8JWT
+        String sJWT sIss sSub sKeyID
+        stJWTKey tJWTPublicKey
+        
+        Send Clear
+        
+        For iIndex from 0 to (SizeOfArray(ucaData) - 1)
+            If (ucaData[iIndex] = 46) Begin
+                Increment iDots
+                If (iDots = 1) Begin
+                    Move (iIndex + 1) to iBodyOffset
+                End
+                Else If (iDots = 2) Begin
+                    Move (iIndex + 1) to iSignatureOffset
+                End
+                Else Function_Return C_JWT_NOT_A_JWT
+            End
+        Loop
+        
+        // Should have 3 sections
+        If (iDots <> 2) Function_Return C_JWT_NOT_A_JWT
+        
+        // Decode the header from base64
+        Get Base64URLDecodeUCharArray (CopyArray(ucaData, 0, iBodyOffset - 2)) to ucaTemp
+        
+        // Try parse
+        Get ParseUtf8 ucaTemp to bOk
+        If (not(bOk)) Begin
+            Function_Return False
+        End
+        
+        // Verify is JWT
+        If (not(HasMember(Self, "typ"))) Begin
+            Function_Return C_JWT_NOT_A_JWT
+        End
+        If (MemberValue(Self, "typ") <> "JWT") Begin
+            Function_Return C_JWT_NOT_A_JWT
+        End
+        
+        // Verify is Algo
+        If (not(HasMember(Self, "alg"))) Begin
+            Function_Return C_JWT_NOT_A_JWT
+        End
+        Get AlgorithmStringToInteger (MemberValue(Self, "alg")) to iAlg
+        If (iAlg < 0 or iAlg > 11) Begin
+            Function_Return C_JWT_NOT_A_SUPPORTED_ALG
+        End
+        
+        // Get the KID out of the header.
+        If (not(HasMember(Self, "kid"))) Begin
+            Function_Return C_JWT_NO_KEY_ID_PRESENT
+        End
+        If (MemberValue(Self, "kid") = "") Begin
+            Function_Return C_JWT_NO_KEY_ID_PRESENT
+        End
+        Get MemberValue 'kid' to sKeyID
+        
+        // Decode the body from base64
+        Get Base64URLDecodeUCharArray (CopyArray(ucaData, iBodyOffset, iSignatureOffset - 2)) to ucaTemp
+        
+        // Try parse
+        Get ParseUtf8 ucaTemp to bOk
+        If (not(bOk)) Begin
+            Function_Return C_JWT_NOT_A_JWT
+        End
+        
+        // Check success parsed states
+        If (IsExpired(Self)) Function_Return C_JWT_EXPIRED
+        If (IsNotYetActive(Self)) Function_Return C_JWT_IS_NOT_YET_ACTIVE
+        
+        //With HMAC algorithms we need to get the public key.
+        If (iAlg < C_JWT_ALG_RS_256) ;
+            Get OnGetPrivateKey sKeyID to tJWTPublicKey
+        Else ;
+            Get OnGetPublicKey sKeyID to tJWTPublicKey
+            
+        If (tJWTPublicKey.sKey = '') Begin
+            Function_Return C_JWT_INVALID_PUBLIC_KEY
+        End
+            
+        Get VerifySignatureEx iAlg tJWTPublicKey (UCharArrayToString(ucaData)) to iRetval
+        If (iRetval <> C_JWT_VALID) ;
+            Function_Return iRetval
+        
+        Function_Return C_JWT_VALID
+    End_Function
+    
+    { Visibility=Private }
+    Function VerifySignatureEx Integer iAlgorithm stJWTKey tJWTPublicKey String sJWT Returns Integer
+        Error DFERR_PROGRAM "Override this Function"
+    End_Function
+    
+    Function DecodeString String sJWT Returns Integer
+        Function_Return (FromUCharArray(Self, StringToUCharArray(sJWT)))
+    End_Function
+    
+    // Functions from the Security.pkg to Base64 decode and encode.
+    { Visibility=Private }
+    Function Base64URLDecodeUCharArray UChar[] UCharData Returns UChar[]
+        Pointer pData
+        Integer iLen
+        Boolean bOk
+        
+        For iLen from 0 to (SizeOfArray(UCharData) - 1)
+            If (UCharData[iLen] = 45) Begin
+                Move 43 to UCharData[iLen]
+            End
+            Else If (UCharData[iLen] = 95) Begin
+                Move 47 to UCharData[iLen]
+            End
+        Loop 
+        
+        While (Mod(SizeOfArray(UCharData), 4) <> 0)
+            Move 61 to UCharData[-1]
+        Loop
+        
+        Move (SizeOfArray(UCharData)) to iLen
+        If (iLen) Begin
+            Move 0 to UCharData[iLen]
+            Move (Base64Decode(AddressOf(UCharData),&iLen)) to pData
+            Move (ResizeArray(UCharData,iLen)) to UCharData
+            Move (MemCopy(AddressOf(UCharData),pData,iLen)) to bOk
+            Move (Free(pData)) to bOk
+        End
+        Function_Return UCharData
+    End_Function
+    
+    // Base 64 Encode from Uchar array to a Uchar array
+    { Visibility=Private }
+    Function Base64URLEncodeUCharArray UChar[] UCharData Returns UChar[]
+        Pointer pBase64
+        Integer iLen
+        Boolean bOk
+        
+        Move (SizeOfArray(UCharData)) to iLen
+        If (iLen) Begin
+            Move (Base64Encode(AddressOf(UCharData), iLen)) to pBase64
+            #IF (!@ > 191)
+            Move (CStringSize(pBase64)) to iLen
+            #ELSE
+            Move (CStringLength(pBase64)) to iLen
+            #ENDIF
+            Move (ResizeArray(UCharData,iLen)) to UCharData
+            Move (MemCopy(AddressOf(UCharData),pBase64,iLen)) to bOk
+            Move (Free(pBase64)) to bOk
+        End
+        
+        While (SizeOfArray(UCharData))
+            If (UCharData[SizeOfArray(UCharData) - 1] = 61) Begin
+                Move (ResizeArray(UCharData, SizeOfArray(UCharData) - 1)) to UCharData
+            End
+            Else Break
+        Loop
+        
+        For iLen from 0 to (SizeOfArray(UCharData) - 1)
+            If (UCharData[iLen] = 43) Begin
+                Move 45 to UCharData[iLen]
+            End
+            Else If (UCharData[iLen] = 47) Begin
+                Move 95 to UCharData[iLen]
+            End
+        Loop 
+        
+        Function_Return UCharData
+    End_Function
+    
+    Function ErrorCodeToErrorMessage Integer iErrorCode Returns String
+        String sErrorCode
+        
+        Case Begin
+            Case (iErrorCode = C_JWT_INTERNAL_ERROR)
+                Move "Internal error with the libary and DF." to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_EXPIRED)
+                Move "JsonWebToken is expired" to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_IS_NOT_YET_ACTIVE)
+                Move "JsonWebToken is not yet active" to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_INVALID)
+                Move "JsonWebToken is invalid" to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_NOT_A_JWT)
+                Move "JsonWebToken is not a JsonWebToken" to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_NOT_A_SUPPORTED_ALG)
+                Move "JsonWebToken is not a supported algorithm" to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_INVALID_JSONWEBTOKEN_HANDLE)
+                Move "Invalid JsonWebToken Handle provided to the backend." to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_INVALID_PUBLIC_KEY)
+                Move "Invalid Public key provided to the backend." to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_INVALID_PRIVATE_KEY)
+                Move "Invalid Private key provided to the backend." to sErrorCode
+            Case Break
+            Case (iErrorCode = C_JWT_NO_KEY_ID_PRESENT)
+                Move "The JsonWebToken doesn't contain a Key ID (KID)." to sErrorCode
+            Case Break
+            //Needs to be extended with errors of the Backend.
+            Case Else
+                Get ErrorCodeToErrorMessageEx iErrorCode to sErrorCode
+        Case End
+        
+        Function_Return sErrorCode
+    End_Function
+    
+    { Visibility=Private }
+    Function ErrorCodeToErrorMessageEx Integer iErrorCode Returns String
+        Error DFERR_PROGRAM "Override this Function"
+    End_Function
+    
+    { Visibility=Private }
+    Function AlgorithmStringToInteger String sAlgorithm Returns Integer
+        Integer iAlgorithm
+        
+        Move (Uppercase(sAlgorithm)) to sAlgorithm
+        //Check what algorithm
+        If (Pos("HS", sAlgorithm) > 0) ;
+            Move 0 to iAlgorithm
+        Else If (Pos("RS", sAlgorithm) > 0) ;
+            Move 3 to iAlgorithm
+        Else If (Pos("PS", sAlgorithm) > 0) ;
+            Move 6 to iAlgorithm
+        Else If (Pos("ES", sAlgorithm) > 0) ;
+            Move 9 to iAlgorithm
+        Else ;
+            Move -1 to iAlgorithm
+        
+        //Check what algorithm size, if we incorporate it.
+        If (iAlgorithm <> -1) Begin
+            If (Pos("384", sAlgorithm) > 0) ;
+                Move (iAlgorithm + 1) to iAlgorithm
+            Else If (Pos("512", sAlgorithm) > 0) ;
+                Move (iAlgorithm + 2) to iAlgorithm
+            //Else 256 means + 0.
+        End
+        
+        Function_Return iAlgorithm
+    End_Function
+End_Class
+
+Use JWT\l8w8jwt2_mixin.pkg
+
+Class cJsonWebToken is a cBaseJsonWebToken
+    Import_Class_Protocol cL8w8jwt_Mixin
+End_Class

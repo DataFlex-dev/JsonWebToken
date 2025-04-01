@@ -1,0 +1,5 @@
+﻿Use JWT\cWebJWTSessionManager.pkg
+
+Object oSessionManager is a cWebJWTSessionManager
+    Set pbPasswordHashing to False
+End_Object
