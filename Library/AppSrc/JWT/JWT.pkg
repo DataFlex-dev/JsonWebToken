@@ -326,7 +326,7 @@ Class cBaseJsonWebToken is a cJsonObject
         // Try parse
         Get ParseUtf8 ucaTemp to bOk
         If (not(bOk)) Begin
-            Function_Return False
+            Function_Return C_JWT_INVALID
         End
         
         // Verify is JWT
