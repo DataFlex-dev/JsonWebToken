@@ -185,9 +185,40 @@ Class cBaseJsonWebToken is a cJsonObject
         Send SetMemberValue "aud" jsonTypeString sValue 
     End_Procedure
     { MethodType=Property }
-    Function Audience Returns String
+    Procedure Set Audience_Array String[] saValues
+        String sValue
+        Boolean bSuccess
+        Handle hoTempJson
+        Get StrJoinFromArray saValues '","' to sValue
+        Move ('["' - sValue - '"]') to sValue
+        Get Create (RefClass(cJsonObject)) to hoTempJson
+        Send InitializeJsonType of hoTempJson jsonTypeArray
+        Get ParseString of hoTempJson sValue to bSuccess
+        If (bSuccess) ;
+            Send SetMember "aud" hoTempJson 
+        Send Destroy of hoTempJson
+    End_Procedure
+    { MethodType=Property }
+    Function Audience Returns String[]
+        Integer iJsonTypeMember
+        String sMemberValue
+        String[] saMemberValue
+        Handle hoMember
+        
         If (not(HasMember(Self, "aud"))) Function_Return ""
-        Function_Return (MemberValue(Self, "aud"))
+        Get MemberValue "aud" to sMemberValue
+        Get MemberJsonType  "aud" to iJsonTypeMember
+        If (iJsonTypeMember = jsonTypeArray) Begin
+            Move (Replace('[ "', sMemberValue, '')) to sMemberValue
+            Move (Replace('" ]', sMemberValue, '')) to sMemberValue
+            Get StrSplitToArray sMemberValue '", "' to saMemberValue
+            Function_Return saMemberValue
+        End
+        Else If (iJsonTypeMember = jsonTypeString) Begin
+            Move sMemberValue to saMemberValue[0]
+            Function_Return saMemberValue
+        End
+        Else Function_Return saMemberValue //Empty
     End_Function
     
     { MethodType=Property }

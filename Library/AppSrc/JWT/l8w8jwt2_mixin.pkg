@@ -166,12 +166,6 @@ Class cL8w8jwt_Mixin is a Mixin
             Move (AddressOf(sIss)) to stl8w8jwt_encoding_params.iss
             Move (SizeOfString(sIss)) to stl8w8jwt_encoding_params.iss_length
         End
-        //Aud
-        If (HasMember(hoJsonWebToken, 'aud')) Begin          
-            Get MemberValue of hoJsonWebToken 'aud' to sAud
-            Move (AddressOf(sAud)) to stl8w8jwt_encoding_params.aud
-            Move (SizeOfString(sAud)) to stl8w8jwt_encoding_params.aud_length
-        End
         //JTI
         If (HasMember(hoJsonWebToken, 'jti')) Begin          
             Get MemberValue of hoJsonWebToken 'jti' to sJti
@@ -204,8 +198,17 @@ Class cL8w8jwt_Mixin is a Mixin
         Move (AddressOf(pJWTResult)) to stl8w8jwt_encoding_params.out
         Move (AddressOf(iSizeOfJWTResult)) to stl8w8jwt_encoding_params.out_length
         
+        Move (StrSplitToArray("sub,iss,iat,exp,nbf", ',')) to saBlacklistMembers
+        //Aud
+        If (HasMember(hoJsonWebToken, 'aud')) Begin          
+            Get MemberValue of hoJsonWebToken 'aud' to sAud
+            If (not(Pos('[', sAud) > 0 or Pos(']', sAud) > 0)) Begin
+                Move (AddressOf(sAud)) to stl8w8jwt_encoding_params.aud
+                Move (SizeOfString(sAud)) to stl8w8jwt_encoding_params.aud_length
+                Move 'aud' to saBlacklistMembers[SizeOfArray(saBlacklistMembers)]
+            End
+        End
         //Additional claims
-        Move (StrSplitToArray("sub,iss,aud,iat,exp,nbf", ',')) to saBlacklistMembers
         Move (SortArray(saBlacklistMembers)) to saBlacklistMembers
         Move 0  to iClaimsCounter
         

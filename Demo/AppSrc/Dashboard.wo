@@ -98,7 +98,8 @@ Object oDashboard is a cWebView
                     Forward Send OnClick
                     Integer iReturnValue
                     String sJWT sReturnValue 
-                    String sSubject sIssuer sAudience
+                    String sSubject sIssuer
+                    String[] saAudience
                     UBigInt ubiIssuedAt ubiExpiration ubiNotBefore
                     
                     WebGet psValue of oWebForm to sJWT
@@ -107,14 +108,17 @@ Object oDashboard is a cWebView
                     
                     Get Subject of oJWT to sSubject
                     Get Issuer of oJWT to sIssuer
-                    Get Audience of oJWT to sAudience
+                    Get Audience of oJWT to saAudience
                     Get IssuedAt of oJWT to ubiIssuedAt
                     Get Expiration of oJWT to ubiExpiration
                     Get NotBefore of oJWT to ubiNotBefore
                     
                     WebSet psValue of oWebForm1 to sSubject
                     WebSet psValue of oWebForm2 to sIssuer
-                    WebSet psValue of oWebForm3 to sAudience
+                    If (SizeOfArray(saAudience) > 1) ;
+                        WebSet psValue of oWebForm3 to (StrJoinFromArray(saAudience, ' '))
+                    Else ;
+                        WebSet psValue of oWebForm3 to saAudience[0]
                     WebSet psValue of oWebForm4 to ubiIssuedAt
                     WebSet psValue of oWebForm5 to ubiExpiration
                     WebSet psValue of oWebForm6 to ubiNotBefore
@@ -236,7 +240,10 @@ Object oDashboard is a cWebView
                     WebGet psValue of oWebForm2 to sValue
                     Set Issuer of oJWT to sValue
                     WebGet psValue of oWebForm3 to sValue
-                    Set Audience of oJWT to sValue
+                    If (Pos(' ', sValue)) ;
+                        Set Audience_Array of oJWT to (StrSplitToArray(sValue, " "))
+                    Else ;
+                        Set Audience of oJWT to sValue
                     WebGet psValue of oWebForm4 to ubiUnixTime
                     Set IssuedAt of oJWT to ubiUnixTime
                     WebGet psValue of oWebForm5 to ubiUnixTime
