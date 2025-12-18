@@ -180,26 +180,32 @@ Class cBaseJsonWebToken is a cJsonObject
         Function_Return (MemberValue(Self, "sub"))
     End_Function
     
+    //If the audience is a space separated string, then it would be a JSON Array, otherwise just a String.
     { MethodType=Property }
     Procedure Set Audience String sValue
-        Send SetMemberValue "aud" jsonTypeString sValue 
-    End_Procedure
-    { MethodType=Property }
-    Procedure Set Audience_Array String[] saValues
-        String sValue
+        String sTempString
         Boolean bSuccess
         Handle hoTempJson
-        Get StrJoinFromArray saValues '","' to sValue
-        Move ('["' - sValue - '"]') to sValue
-        Get Create (RefClass(cJsonObject)) to hoTempJson
-        Send InitializeJsonType of hoTempJson jsonTypeArray
-        Get ParseString of hoTempJson sValue to bSuccess
-        If (bSuccess) ;
-            Send SetMember "aud" hoTempJson 
-        Send Destroy of hoTempJson
+        String[] saAudience
+        
+        If (Pos(' ', sValue)) Begin
+            Move (StrSplitToArray(sValue, " ")) to saAudience
+            If (SizeOfArray(saAudience) > 0) Begin
+                Get StrJoinFromArray saAudience '","' to sTempString
+                Move ('["' - sTempString - '"]') to sTempString
+                Get Create (RefClass(cJsonObject)) to hoTempJson
+                Send InitializeJsonType of hoTempJson jsonTypeArray
+                Get ParseString of hoTempJson sTempString to bSuccess
+                If (bSuccess) ;
+                    Send SetMember "aud" hoTempJson 
+                Send Destroy of hoTempJson
+            End
+        End
+        Else ;
+            Send SetMemberValue "aud" jsonTypeString sValue 
     End_Procedure
     { MethodType=Property }
-    Function Audience Returns String[]
+    Function Audience Returns String
         Integer iJsonTypeMember
         String sMemberValue
         String[] saMemberValue
@@ -207,18 +213,19 @@ Class cBaseJsonWebToken is a cJsonObject
         
         If (not(HasMember(Self, "aud"))) Function_Return ""
         Get MemberValue "aud" to sMemberValue
+        
         Get MemberJsonType  "aud" to iJsonTypeMember
         If (iJsonTypeMember = jsonTypeArray) Begin
             Move (Replace('[ "', sMemberValue, '')) to sMemberValue
             Move (Replace('" ]', sMemberValue, '')) to sMemberValue
             Get StrSplitToArray sMemberValue '", "' to saMemberValue
-            Function_Return saMemberValue
+            Function_Return (StrJoinFromArray(saMemberValue, ' '))
         End
         Else If (iJsonTypeMember = jsonTypeString) Begin
-            Move sMemberValue to saMemberValue[0]
-            Function_Return saMemberValue
+            Function_Return sMemberValue
         End
-        Else Function_Return saMemberValue //Empty
+        Else ;
+            Function_Return ""
     End_Function
     
     { MethodType=Property }
