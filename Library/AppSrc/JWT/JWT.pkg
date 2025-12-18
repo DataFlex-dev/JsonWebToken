@@ -213,6 +213,7 @@ Class cBaseJsonWebToken is a cJsonObject
         
         If (not(HasMember(Self, "aud"))) Function_Return ""
         Get MemberValue "aud" to sMemberValue
+        Get UnescapeString sMemberValue to sMemberValue
         
         Get MemberJsonType  "aud" to iJsonTypeMember
         If (iJsonTypeMember = jsonTypeArray) Begin
@@ -576,6 +577,65 @@ Class cBaseJsonWebToken is a cJsonObject
         End
         
         Function_Return iAlgorithm
+    End_Function
+    
+    Function UnescapeString String sInput Returns String
+        String sResult
+        Integer iLen i
+        String sChar sNext
+    
+        Move "" to sResult
+        Move (Length(sInput)) to iLen
+        Move 1 to i
+    
+        While (i <= iLen)
+            Move (Mid(sInput, 1, i)) to sChar
+    
+            If (sChar = "\") Begin
+                If (i < iLen) Begin
+                    Increment i
+                    Move (Mid(sInput, 1, i)) to sNext
+    
+                    Case Begin
+                        Case (sNext = "\")
+                            Append sResult "\"
+                            Case Break
+    
+                        Case (sNext = "n")
+                            Append sResult (Character(10))
+                            Case Break
+    
+                        Case (sNext = "r")
+                            Append sResult (Character(13))
+                            Case Break
+    
+                        Case (sNext = "t")
+                            Append sResult (Character(9))
+                            Case Break
+    
+                        Case (sNext = '"')
+                            Append sResult '"'
+                            Case Break
+    
+                        Case (sNext = "'")
+                            Append sResult "'"
+                            Case Break
+    
+                        Case Else
+                            // Forgiving mode: drop the backslash
+                            Append sResult sNext
+                    Case End
+                End
+                Else Begin
+                    // Trailing backslash → ignore it
+                End
+            End
+            Else Begin
+                Append sResult sChar
+            End
+            Increment i
+        Loop
+        Function_Return sResult
     End_Function
 End_Class
 
