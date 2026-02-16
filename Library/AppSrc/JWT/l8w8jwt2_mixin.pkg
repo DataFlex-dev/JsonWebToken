@@ -225,8 +225,18 @@ Class cL8w8jwt_Mixin is a Mixin
                 Move (MemSet(lpMemberName, 0, SizeOfString(sMemberName) + 1)) to bOk
                 Move (MemCopy(lpMemberName, AddressOf(sMemberName), SizeOfString(sMemberName))) to bOk
                 
-                //Allocate memory for the value string.
                 Get MemberValue of hoJsonWebToken sMemberName to sMemberValue
+                Get MemberJsonType of hoJsonWebToken sMemberName to iJsontype
+                If (iJsontype = jsonTypeBoolean) Begin
+                    If (sMemberValue) Begin
+                        Move "true" to sMemberValue
+                    End
+                    Else Begin
+                        Move "false" to sMemberValue
+                    End
+                End
+                
+                //Allocate memory for the value string.
                 Move (Alloc(SizeOfString(sMemberValue) + 1)) to lpMemberValue
                 Move (MemSet(lpMemberValue, 0, SizeOfString(sMemberValue) + 1)) to bOk
                 Move (MemCopy(lpMemberValue, AddressOf(sMemberValue), SizeOfString(sMemberValue))) to bOk
@@ -236,7 +246,6 @@ Class cL8w8jwt_Mixin is a Mixin
                 Move (SizeOfString(sMemberName)) to stl8w8jwt_additional_payload_claims.key_length
                 Move (lpMemberValue) to stl8w8jwt_additional_payload_claims.value
                 Move (SizeOfString(sMemberValue)) to stl8w8jwt_additional_payload_claims.value_length
-                Get MemberJsonType of hoJsonWebToken sMemberName to iJsontype
                 Get DFJsonTypeToL8W8JWTJsonType iJsontype to stl8w8jwt_additional_payload_claims.type
                 
                 //Copy the value from the struct into the allocated memory address
