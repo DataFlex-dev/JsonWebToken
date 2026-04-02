@@ -198,7 +198,7 @@ Class cL8w8jwt_Mixin is a Mixin
         Move (AddressOf(pJWTResult)) to stl8w8jwt_encoding_params.out
         Move (AddressOf(iSizeOfJWTResult)) to stl8w8jwt_encoding_params.out_length
         
-        Move (StrSplitToArray("sub,iss,iat,exp,nbf", ',')) to saBlacklistMembers
+        Move (StrSplitToArray("sub,iss,iat,exp,nbf,jti", ',')) to saBlacklistMembers
         //Aud
         If (HasMember(hoJsonWebToken, 'aud')) Begin          
             Get MemberValue of hoJsonWebToken 'aud' to sAud
