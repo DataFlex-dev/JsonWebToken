@@ -372,7 +372,7 @@ Class cBaseJsonWebToken is a cJsonObject
         If (not(HasMember(Self, "typ"))) Begin
             Function_Return C_JWT_NOT_A_JWT
         End
-        If (MemberValue(Self, "typ") <> "JWT") Begin
+        If (not(MemberValue(Self, "typ") contains "JWT")) Begin
             Function_Return C_JWT_NOT_A_JWT
         End
         
