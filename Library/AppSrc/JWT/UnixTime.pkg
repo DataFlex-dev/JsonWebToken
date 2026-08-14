@@ -37,6 +37,7 @@ External_Function WinAPI_SystemTimeToFileTime "SystemTimeToFileTime" Kernel32.dl
     Returns Boolean
 #ENDIF
 
+#IFNDEF Get_CurrentUnixTime
 Function CurrentUnixTime Global Returns UBigInt
     UBigInt     iTime
     UBigInt     iUnixTime
@@ -53,7 +54,9 @@ Function CurrentUnixTime Global Returns UBigInt
 
     Function_Return iUnixTime
 End_Function
+#ENDIF
 
+#IFNDEF Get_UnixTimeToDateTime
 Function UnixTimeToDateTime Global UBigInt ullUnixTime Returns TimeSpan
     DateTime dDT
     TimeSpan tsTimeSpan
@@ -79,6 +82,7 @@ Function UnixTimeToDateTime Global UBigInt ullUnixTime Returns TimeSpan
     
     Function_Return (dDT + tsTimeSpan)
 End_Function
+#ENDIF
 
 Function DateTimetoUnixTime DateTime dtUTCtime Returns UBigInt
     DateTime dtEpoc
